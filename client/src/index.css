@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  html:not(.dark) {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  /* Night mode: class `dark` lives on <html> (Tailwind), not <body> — target .dark body */
+  body {
+    @apply min-h-screen font-sans transition-colors duration-500;
+    @apply bg-zinc-100 text-zinc-900;
+  }
+
+  .dark html {
+    @apply bg-nasa-void;
+  }
+
+  .dark body {
+    @apply bg-nasa-void text-nasa-mist;
+    background-image: linear-gradient(rgba(0, 212, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 212, 255, 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .scanlines {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    opacity: 0.04;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.35) 2px,
+      rgba(0, 0, 0, 0.35) 4px
+    );
+  }
+
+  .dark .scanlines {
+    opacity: 0.08;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 212, 255, 0.1) 2px,
+      rgba(0, 212, 255, 0.1) 4px
+    );
+  }
+}
