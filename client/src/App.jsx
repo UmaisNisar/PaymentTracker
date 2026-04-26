@@ -12,6 +12,7 @@ import LogPaymentModal from './components/LogPaymentModal'
 import MonthSelect from './components/MonthSelect'
 import PaymentsTable from './components/PaymentsTable'
 import SummaryCards from './components/SummaryCards'
+import WakingIndicator from './components/WakingIndicator'
 import { getFridaysInMonth, parseYearMonth, toDateKey } from './utils/schedule'
 import { haptics } from './utils/haptics'
 
@@ -212,6 +213,8 @@ export default function App() {
       <div className="py-5 sm:py-7">
         <Header />
       </div>
+
+      <WakingIndicator loading={loading} />
 
       <div className="mt-2 flex flex-col gap-3 sm:mt-6 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex w-full flex-wrap items-center gap-2 sm:gap-3 lg:w-auto">
