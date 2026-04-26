@@ -37,6 +37,10 @@ export default {
           '0%': { opacity: '0', transform: 'scale(0.96) translateY(12px)' },
           '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
         },
+        sheetIn: {
+          '0%': { opacity: '0', transform: 'translateY(100%)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
         backdropIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
@@ -45,11 +49,36 @@ export default {
           '0%': { opacity: '0', transform: 'scale(0.97)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
+        fadeUp: {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideIn: {
+          '0%': { opacity: '0', transform: 'translateX(-12px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        pulseSoft: {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(252, 61, 33, 0.0)' },
+          '50%': { boxShadow: '0 0 0 4px rgba(252, 61, 33, 0.15)' },
+        },
+        flashCyan: {
+          '0%': { boxShadow: '0 0 0 0 rgba(0, 212, 255, 0.6)' },
+          '100%': { boxShadow: '0 0 0 12px rgba(0, 212, 255, 0)' },
+        },
+        spin: {
+          to: { transform: 'rotate(360deg)' },
+        },
       },
       animation: {
         'modal-in': 'modalIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'sheet-in': 'sheetIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'backdrop-in': 'backdropIn 0.22s ease-out forwards',
         'lightbox-in': 'lightboxPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'fade-up': 'fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards',
+        'slide-in': 'slideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards',
+        'pulse-soft': 'pulseSoft 2.4s ease-in-out infinite',
+        'flash-cyan': 'flashCyan 0.7s ease-out',
+        'spin-slow': 'spin 0.9s linear infinite',
       },
     },
   },

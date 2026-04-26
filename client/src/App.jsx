@@ -13,6 +13,7 @@ import MonthSelect from './components/MonthSelect'
 import PaymentsTable from './components/PaymentsTable'
 import SummaryCards from './components/SummaryCards'
 import { getFridaysInMonth, parseYearMonth, toDateKey } from './utils/schedule'
+import { haptics } from './utils/haptics'
 
 /** First month shown in the UI (payments start in 2026). */
 const TRACKING_FIRST_MONTH = new Date(2026, 0, 1)
@@ -162,11 +163,14 @@ export default function App() {
 
   async function handleSkipToggle() {
     setSkipBusy(true)
+    haptics.select()
     try {
       if (monthSkipped) await unskipMonth(y, mNum)
       else await skipMonth(y, mNum)
+      haptics.success()
       await refresh()
     } catch (e) {
+      haptics.error()
       setError(e.message || 'Skip action failed')
     } finally {
       setSkipBusy(false)
@@ -200,23 +204,30 @@ export default function App() {
   }, [monthSelectOptions, month])
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div
+      className="relative mx-auto min-h-screen max-w-6xl px-4 pb-safe pt-safe sm:px-6 lg:px-8"
+      style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+    >
       <div className="scanlines" aria-hidden="true" />
-      <Header />
+      <div className="py-5 sm:py-7">
+        <Header />
+      </div>
 
-      <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          <span id="month-field-label" className="font-mono text-xs uppercase tracking-widest text-zinc-600 dark:text-nasa-mist">
+      <div className="mt-2 flex flex-col gap-3 sm:mt-6 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:gap-3 lg:w-auto">
+          <span id="month-field-label" className="font-mono text-[11px] uppercase tracking-widest text-zinc-600 dark:text-nasa-mist sm:text-xs">
             Month
           </span>
-          <MonthSelect
-            labelId="month-field-label"
-            value={month}
-            onChange={setMonth}
-            options={monthSelectOptions}
-          />
+          <div className="min-w-0 flex-1 lg:flex-initial">
+            <MonthSelect
+              labelId="month-field-label"
+              value={month}
+              onChange={setMonth}
+              options={monthSelectOptions}
+            />
+          </div>
           {monthSkipped && (
-            <span className="rounded border border-nasa-cyan/40 bg-nasa-cyan/10 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-nasa-cyan">
+            <span className="animate-fade-up rounded border border-nasa-cyan/40 bg-nasa-cyan/10 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-nasa-cyan">
               Month skipped
             </span>
           )}
@@ -226,19 +237,28 @@ export default function App() {
             type="button"
             disabled={skipBusy}
             onClick={handleSkipToggle}
-            className="rounded-lg border border-zinc-400 bg-zinc-100 px-4 py-2 font-mono text-xs uppercase tracking-widest text-zinc-800 transition-all duration-200 ease-out hover:border-nasa-cyan hover:text-nasa-red hover:shadow-sm active:scale-[0.98] disabled:opacity-50 motion-reduce:active:scale-100 dark:border-nasa-line dark:bg-nasa-grid dark:text-nasa-mist dark:hover:border-nasa-orange dark:hover:text-nasa-orange dark:hover:shadow-[0_0_16px_-8px_rgba(255,107,53,0.2)]"
+            className="w-full rounded-lg border border-zinc-400 bg-zinc-100 px-4 py-2.5 font-mono text-xs uppercase tracking-widest text-zinc-800 transition-all duration-200 ease-out hover:border-nasa-cyan hover:text-nasa-red hover:shadow-sm active:scale-[0.97] disabled:opacity-50 motion-reduce:active:scale-100 dark:border-nasa-line dark:bg-nasa-grid dark:text-nasa-mist dark:hover:border-nasa-orange dark:hover:text-nasa-orange dark:hover:shadow-[0_0_16px_-8px_rgba(255,107,53,0.2)] sm:w-auto"
           >
-            {skipBusy ? '…' : monthSkipped ? 'Unskip month' : 'Skip whole month'}
+            {skipBusy ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="anim-spin-slow inline-block h-3 w-3 rounded-full border-2 border-current border-r-transparent" />
+                Working…
+              </span>
+            ) : monthSkipped ? (
+              'Unskip month'
+            ) : (
+              'Skip whole month'
+            )}
           </button>
         </div>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-6 sm:mt-8">
         <SummaryCards summary={summary} loading={summaryLoading} />
       </div>
 
       {hasNoPaymentsEver && (
-        <div className="mt-8 rounded-xl border border-nasa-line bg-white p-6 text-center transition-all duration-300 ease-out dark:border-nasa-cyan/20 dark:bg-nasa-grid dark:hover:border-nasa-cyan/35">
+        <div className="mt-6 animate-fade-up rounded-xl border border-nasa-line bg-white p-5 text-center transition-all duration-300 ease-out dark:border-nasa-cyan/20 dark:bg-nasa-grid dark:hover:border-nasa-cyan/35 sm:mt-8 sm:p-6">
           <p className="font-sans font-semibold text-zinc-900 dark:text-white">No transmissions yet</p>
           <p className="mt-2 font-mono text-sm text-zinc-600 dark:text-nasa-mist">
             Use <strong className="text-nasa-orange">Attach</strong> on a Friday row to add sender + receiver screenshots and transmit.
@@ -246,7 +266,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="mt-8">
+      <div className="mt-6 sm:mt-8">
         <h2 className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.35em] text-zinc-500 dark:text-nasa-cyan/70">
           Friday schedule
         </h2>

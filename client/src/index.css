@@ -7,6 +7,9 @@
 @layer base {
   html {
     @apply antialiased;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   html:not(.dark) {
@@ -17,10 +20,10 @@
     color-scheme: dark;
   }
 
-  /* Night mode: class `dark` lives on <html> (Tailwind), not <body> — target .dark body */
   body {
     @apply min-h-screen font-sans transition-colors duration-500;
     @apply bg-zinc-100 text-zinc-900;
+    overscroll-behavior-y: none;
   }
 
   .dark html {
@@ -33,6 +36,20 @@
       linear-gradient(90deg, rgba(0, 212, 255, 0.06) 1px, transparent 1px);
     background-size: 24px 24px;
     background-attachment: fixed;
+  }
+
+  /* Bigger tap targets on touch devices */
+  @media (pointer: coarse) {
+    button,
+    [role='button'],
+    input[type='file'],
+    input[type='date'],
+    input[type='number'],
+    input[type='text'],
+    select,
+    textarea {
+      min-height: 40px;
+    }
   }
 }
 
@@ -61,5 +78,39 @@
       rgba(0, 212, 255, 0.1) 2px,
       rgba(0, 212, 255, 0.1) 4px
     );
+  }
+
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .pt-safe {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+
+  .px-safe {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .tap-press {
+    @apply transition-transform duration-150 ease-out;
+  }
+  .tap-press:active {
+    transform: scale(0.97);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tap-press:active {
+      transform: none;
+    }
+  }
+
+  /* Stagger helpers — apply with style={{ animationDelay: ... }} */
+  .stagger > * {
+    animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  .anim-spin-slow {
+    animation: spin 0.9s linear infinite;
   }
 }

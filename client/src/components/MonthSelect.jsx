@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { haptics } from '../utils/haptics'
 
 const statusStyles = {
   complete: {
@@ -21,12 +22,6 @@ const statusTitles = {
   open: 'Missing or underpaid Fridays, or month in progress',
 }
 
-/**
- * @param {object} props
- * @param {string} props.value YYYY-MM
- * @param {(v: string) => void} props.onChange
- * @param {{ value: string, monthLabel: string, status: 'open' | 'complete' | 'skipped' }[]} props.options
- */
 export default function MonthSelect({ value, onChange, options, labelId }) {
   const listId = useId()
   const [open, setOpen] = useState(false)
@@ -60,7 +55,7 @@ export default function MonthSelect({ value, onChange, options, labelId }) {
 
   if (!hasOptions) {
     return (
-      <div className="min-w-[min(100%,280px)] rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2 font-mono text-sm text-zinc-500 dark:border-nasa-line dark:bg-nasa-void dark:text-nasa-mist/70">
+      <div className="w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2 font-mono text-sm text-zinc-500 dark:border-nasa-line dark:bg-nasa-void dark:text-nasa-mist/70 sm:min-w-[280px] sm:w-auto">
         No months in range yet
       </div>
     )
@@ -70,7 +65,7 @@ export default function MonthSelect({ value, onChange, options, labelId }) {
     selected.status === 'complete' ? 'Complete' : selected.status === 'skipped' ? 'Skipped' : 'Open'
 
   return (
-    <div className="relative min-w-[min(100%,280px)]" ref={rootRef}>
+    <div className="relative w-full sm:min-w-[280px] sm:w-auto" ref={rootRef}>
       <button
         type="button"
         aria-haspopup="listbox"
@@ -78,9 +73,12 @@ export default function MonthSelect({ value, onChange, options, labelId }) {
         aria-controls={listId}
         aria-labelledby={labelId ?? undefined}
         aria-label={labelId ? undefined : 'Select month'}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          haptics.tap()
+          setOpen((o) => !o)
+        }}
         className={[
-          'flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-left font-mono text-sm text-zinc-900 outline-none ring-2 ring-transparent transition-all duration-200 ease-out',
+          'flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-left font-mono text-sm text-zinc-900 outline-none ring-2 ring-transparent transition-all duration-200 ease-out active:scale-[0.99] motion-reduce:active:scale-100',
           'hover:border-nasa-cyan/50 focus-visible:ring-nasa-cyan/40 dark:border-nasa-line dark:bg-nasa-void dark:text-nasa-mist dark:hover:border-nasa-cyan/40',
           open ? 'ring-nasa-cyan/35 dark:ring-nasa-cyan/30' : '',
         ].join(' ')}
@@ -92,7 +90,10 @@ export default function MonthSelect({ value, onChange, options, labelId }) {
         >
           {chipText}
         </span>
-        <span className="shrink-0 text-zinc-400 transition-transform duration-200 dark:text-nasa-mist/60" style={{ transform: open ? 'rotate(180deg)' : undefined }}>
+        <span
+          className="shrink-0 text-zinc-400 transition-transform duration-300 dark:text-nasa-mist/60"
+          style={{ transform: open ? 'rotate(180deg)' : undefined }}
+        >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
@@ -103,7 +104,7 @@ export default function MonthSelect({ value, onChange, options, labelId }) {
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 z-40 mt-1 max-h-72 overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-xl dark:border-nasa-line dark:bg-nasa-grid dark:shadow-[0_16px_48px_-12px_rgba(0,0,0,0.65)]"
+          className="absolute left-0 right-0 z-40 mt-1 max-h-72 origin-top animate-fade-up overflow-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-xl dark:border-nasa-line dark:bg-nasa-grid dark:shadow-[0_16px_48px_-12px_rgba(0,0,0,0.65)]"
         >
           {options.map((o) => {
             const st = statusStyles[o.status]
@@ -118,11 +119,12 @@ export default function MonthSelect({ value, onChange, options, labelId }) {
                   aria-selected={isSel}
                   title={statusTitles[o.status]}
                   onClick={() => {
+                    haptics.select()
                     onChange(o.value)
                     setOpen(false)
                   }}
                   className={[
-                    'flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left font-mono text-sm transition-colors duration-150',
+                    'flex w-full items-center justify-between gap-2 px-3 py-3 text-left font-mono text-sm transition-colors duration-150 active:scale-[0.99] motion-reduce:active:scale-100',
                     st.row,
                     isSel ? 'font-semibold text-zinc-900 dark:text-white' : 'text-zinc-800 dark:text-nasa-mist',
                   ].join(' ')}
