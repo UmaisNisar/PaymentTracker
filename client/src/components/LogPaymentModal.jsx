@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPaymentMultipart } from '../api/payments'
 
 function toInputDate(d) {
@@ -7,6 +7,24 @@ function toInputDate(d) {
   const m = String(x.getMonth() + 1).padStart(2, '0')
   const day = String(x.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
+}
+
+function extFromMime(mime) {
+  switch (mime) {
+    case 'image/jpeg': return 'jpg'
+    case 'image/png': return 'png'
+    case 'image/gif': return 'gif'
+    case 'image/webp': return 'webp'
+    default: return 'png'
+  }
+}
+
+function clipboardItemToFile(item, role) {
+  const blob = item.getAsFile()
+  if (!blob) return null
+  const ext = extFromMime(blob.type)
+  const name = `${role}-${Date.now()}.${ext}`
+  return new File([blob], name, { type: blob.type || 'image/png' })
 }
 
 export default function LogPaymentModal({ open, onClose, expectedDateIso, defaultAmount = '2000', onCreated }) {
@@ -18,8 +36,11 @@ export default function LogPaymentModal({ open, onClose, expectedDateIso, defaul
   const [notes, setNotes] = useState('')
   const [senderImage, setSenderImage] = useState(null)
   const [receiverImage, setReceiverImage] = useState(null)
+  const [pasteTarget, setPasteTarget] = useState('sender')
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState(null)
+  const [pasteFlash, setPasteFlash] = useState(null)
+  const modalRef = useRef(null)
 
   useEffect(() => {
     if (!open || !expectedDateIso) return
@@ -30,8 +51,51 @@ export default function LogPaymentModal({ open, onClose, expectedDateIso, defaul
     setNotes('')
     setSenderImage(null)
     setReceiverImage(null)
+    setPasteTarget('sender')
     setErr(null)
+    setPasteFlash(null)
   }, [open, expectedDateIso, defaultAmount])
+
+  const senderPreview = useMemo(() => (senderImage ? URL.createObjectURL(senderImage) : null), [senderImage])
+  const receiverPreview = useMemo(() => (receiverImage ? URL.createObjectURL(receiverImage) : null), [receiverImage])
+  useEffect(() => () => { if (senderPreview) URL.revokeObjectURL(senderPreview) }, [senderPreview])
+  useEffect(() => () => { if (receiverPreview) URL.revokeObjectURL(receiverPreview) }, [receiverPreview])
+
+  useEffect(() => {
+    if (!open) return
+    function onPaste(e) {
+      const items = e.clipboardData?.items
+      if (!items) return
+      let imageItem = null
+      for (const it of items) {
+        if (it.kind === 'file' && it.type.startsWith('image/')) {
+          imageItem = it
+          break
+        }
+      }
+      if (!imageItem) return
+      e.preventDefault()
+
+      let target = pasteTarget
+      if (!senderImage) target = 'sender'
+      else if (!receiverImage) target = 'receiver'
+
+      const file = clipboardItemToFile(imageItem, target)
+      if (!file) return
+
+      if (target === 'sender') {
+        setSenderImage(file)
+        setPasteTarget(receiverImage ? 'sender' : 'receiver')
+      } else {
+        setReceiverImage(file)
+        setPasteTarget('sender')
+      }
+      setPasteFlash(target)
+      setTimeout(() => setPasteFlash(null), 700)
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [open, pasteTarget, senderImage, receiverImage])
 
   if (!open || !expectedDateIso) return null
 
@@ -78,6 +142,7 @@ export default function LogPaymentModal({ open, onClose, expectedDateIso, defaul
       }}
     >
       <div
+        ref={modalRef}
         className="max-h-[92vh] w-full max-w-lg animate-modal-in overflow-y-auto rounded-xl border border-zinc-200 bg-white p-6 shadow-nasa motion-reduce:animate-none dark:border-nasa-cyan/25 dark:bg-nasa-grid dark:shadow-[0_0_0_1px_rgba(0,212,255,0.08),0_24px_64px_-12px_rgba(0,0,0,0.55)]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -146,33 +211,37 @@ export default function LogPaymentModal({ open, onClose, expectedDateIso, defaul
             </div>
           </div>
 
+          <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-3 py-2 font-mono text-[11px] text-zinc-600 dark:border-nasa-cyan/30 dark:bg-nasa-void/40 dark:text-nasa-mist">
+            Tip: copy a screenshot, then press <kbd className="rounded border border-zinc-300 bg-white px-1 py-0.5 font-mono text-[10px] dark:border-nasa-line dark:bg-nasa-grid">Ctrl</kbd>+<kbd className="rounded border border-zinc-300 bg-white px-1 py-0.5 font-mono text-[10px] dark:border-nasa-line dark:bg-nasa-grid">V</kbd> to attach. Next paste goes to: <span className="text-nasa-cyan">{(!senderImage ? 'sender' : !receiverImage ? 'receiver' : pasteTarget)}</span>.
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-zinc-500 dark:text-nasa-mist" htmlFor={`${formId}-img1`}>
-                Sender confirmation
-              </label>
-              <input
-                id={`${formId}-img1`}
-                type="file"
-                accept="image/*"
-                required
-                onChange={(e) => setSenderImage(e.target.files?.[0] ?? null)}
-                className="mt-1 w-full text-sm text-zinc-600 file:mr-3 file:rounded-md file:border-0 file:bg-nasa-red file:px-3 file:py-2 file:font-mono file:text-xs file:uppercase file:text-white hover:file:bg-nasa-orange dark:text-nasa-mist dark:file:bg-nasa-orange"
-              />
-            </div>
-            <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-zinc-500 dark:text-nasa-mist" htmlFor={`${formId}-img2`}>
-                Receiver confirmation
-              </label>
-              <input
-                id={`${formId}-img2`}
-                type="file"
-                accept="image/*"
-                required
-                onChange={(e) => setReceiverImage(e.target.files?.[0] ?? null)}
-                className="mt-1 w-full text-sm text-zinc-600 file:mr-3 file:rounded-md file:border-0 file:bg-nasa-cyan/80 file:px-3 file:py-2 file:font-mono file:text-xs file:uppercase file:text-nasa-void hover:file:bg-nasa-cyan dark:text-nasa-mist"
-              />
-            </div>
+            <ImageSlot
+              id={`${formId}-img1`}
+              label="Sender confirmation"
+              role="sender"
+              file={senderImage}
+              previewUrl={senderPreview}
+              isPasteTarget={(!senderImage) || (senderImage && receiverImage && pasteTarget === 'sender')}
+              flashed={pasteFlash === 'sender'}
+              onFile={(f) => { setSenderImage(f); setPasteTarget('receiver') }}
+              onClear={() => { setSenderImage(null); setPasteTarget('sender') }}
+              onTarget={() => setPasteTarget('sender')}
+              accentClass="file:bg-nasa-red hover:file:bg-nasa-orange dark:file:bg-nasa-orange file:text-white"
+            />
+            <ImageSlot
+              id={`${formId}-img2`}
+              label="Receiver confirmation"
+              role="receiver"
+              file={receiverImage}
+              previewUrl={receiverPreview}
+              isPasteTarget={(senderImage && !receiverImage) || (senderImage && receiverImage && pasteTarget === 'receiver')}
+              flashed={pasteFlash === 'receiver'}
+              onFile={(f) => { setReceiverImage(f); setPasteTarget('sender') }}
+              onClear={() => { setReceiverImage(null); setPasteTarget('receiver') }}
+              onTarget={() => setPasteTarget('receiver')}
+              accentClass="file:bg-nasa-cyan/80 hover:file:bg-nasa-cyan file:text-nasa-void"
+            />
           </div>
 
           <div>
@@ -220,6 +289,44 @@ export default function LogPaymentModal({ open, onClose, expectedDateIso, defaul
           </div>
         </form>
       </div>
+    </div>
+  )
+}
+
+function ImageSlot({ id, label, file, previewUrl, isPasteTarget, flashed, onFile, onClear, onTarget, accentClass }) {
+  const ringClass = flashed
+    ? 'ring-2 ring-nasa-cyan'
+    : isPasteTarget
+      ? 'ring-1 ring-nasa-cyan/60'
+      : ''
+  return (
+    <div onClick={onTarget} className={`group relative rounded-lg border border-zinc-200 bg-white p-2 transition dark:border-nasa-line dark:bg-nasa-void/40 ${ringClass}`}>
+      <label className="block font-mono text-xs uppercase tracking-wider text-zinc-500 dark:text-nasa-mist" htmlFor={id}>
+        {label}{isPasteTarget && <span className="ml-1 text-nasa-cyan">• paste here</span>}
+      </label>
+      {previewUrl ? (
+        <div className="mt-2">
+          <img src={previewUrl} alt={label} className="h-24 w-full rounded-md object-cover" />
+          <div className="mt-1 flex items-center justify-between gap-2 font-mono text-[10px] text-zinc-500 dark:text-nasa-mist">
+            <span className="truncate">{file?.name}</span>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onClear() }}
+              className="rounded border border-zinc-300 px-1.5 py-0.5 uppercase tracking-wider text-zinc-600 hover:border-nasa-red hover:text-nasa-red dark:border-nasa-line dark:text-nasa-mist"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      ) : (
+        <input
+          id={id}
+          type="file"
+          accept="image/*"
+          onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+          className={`mt-2 w-full text-sm text-zinc-600 file:mr-3 file:rounded-md file:border-0 file:px-3 file:py-2 file:font-mono file:text-xs file:uppercase dark:text-nasa-mist ${accentClass}`}
+        />
+      )}
     </div>
   )
 }
